@@ -77,6 +77,7 @@
 #define D_HEX_d (ALL_SEGS & ~(HORIZ_UP | VERT_LEFT_UP))
 #define D_HEX_E (ALL_SEGS & ~(VERT_RIGHT_UP | VERT_RIGHT_DOWN))
 #define D_HEX_F (ALL_SEGS & ~(VERT_RIGHT_UP | VERT_RIGHT_DOWN | HORIZ_DOWN))
+#define D_ALPHA_P (ALL_SEGS & ~(VERT_RIGHT_DOWN | HORIZ_DOWN))
 #define D_UNKNOWN 0
 
 #define NUMBER_OF_DIGITS 6 /* in this special case */
