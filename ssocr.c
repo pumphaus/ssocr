@@ -123,7 +123,8 @@ int main(int argc, char **argv)
   int need_pixels = NEED_PIXELS; /*pixels needed to recognize a segment as set*/
   int number_of_digits = NUMBER_OF_DIGITS; /* look for this many digits */
   int ignore_pixels = IGNORE_PIXELS; /* pixels to ignore when checking column */
-  int one_ratio = ONE_RATIO; /* height/width > one_ratio => digit 'one' */
+  float one_ratio = ONE_RATIO; /* height/width > one_ratio => digit 'one' */
+  float colon_ratio = COLON_RATIO; /* height/width > colon_ratio => char 'colon' */
   int minus_ratio = MINUS_RATIO; /* height/width > minus_ratio => char 'minus' */
   double thresh=THRESHOLD;  /* border between light and dark */
   int offset;  /* offset for shear */
@@ -167,6 +168,7 @@ int main(int argc, char **argv)
       {"ignore-pixels", 1, 0, 'i'}, /* pixels ignored when searching digits */
       {"number-digits", 1, 0, 'd'}, /* number of digits in image */
       {"one-ratio", 1, 0, 'r'}, /* height/width threshold to recognize a one */
+      {"colon-ratio", 1, 0, 'c'}, /* height/width threshold to recognize a colon */
       {"minus-ratio", 1, 0, 'm'}, /* width/height threshold to recognize a minus sign */
       {"output-image", 1, 0, 'o'}, /* write processed image to given file */
       {"output-format", 1, 0, 'O'}, /* format of output image */
@@ -180,7 +182,7 @@ int main(int argc, char **argv)
       {"luminance", 1, 0, 'l'}, /* luminance formula */
       {0, 0, 0, 0} /* terminate long options */
     };
-    c = getopt_long (argc, argv, "hVt:vaTn:i:d:r:m:o:O:D::pPf:b:Igl:",
+    c = getopt_long (argc, argv, "hVt:vaTn:i:d:r:c:m:o:O:D::pPf:b:Igl:",
                      long_options, &option_index);
     if (c == -1) break; /* leaves while (1) loop */
     switch (c) {
@@ -248,10 +250,19 @@ int main(int argc, char **argv)
         break;
       case 'r':
         if(optarg) {
-          one_ratio = atoi(optarg);
+          one_ratio = atof(optarg);
           if(one_ratio < 2) {
             fprintf(stderr, "warning: ignoring --one-ratio=%s\n", optarg);
             one_ratio = ONE_RATIO;
+          }
+        }
+        break;
+      case 'c':
+        if(optarg) {
+          colon_ratio = atof(optarg);
+          if(colon_ratio < 2) {
+            fprintf(stderr, "warning: ignoring --colon-ratio=%s\n", optarg);
+            colon_ratio = COLON_RATIO;
           }
         }
         break;
@@ -367,7 +378,8 @@ int main(int argc, char **argv)
                     (ssocr_background == SSOCR_BLACK) ? "black" : "white");
     fprintf(stderr, "luminance  = ");
     print_lum_key(lt, stderr); fprintf(stderr, "\n");
-    fprintf(stderr, "height/width threshold for one   = %d\n", one_ratio);
+    fprintf(stderr, "height/width threshold for one   = %f\n", one_ratio);
+    fprintf(stderr, "height/width threshold for colon = %f\n", colon_ratio);
     fprintf(stderr, "width/height threshold for minus = %d\n", minus_ratio);
     fprintf(stderr, "optind=%d argc=%d\n", optind, argc);
     fprintf(stderr, "================================================================================\n");
@@ -1037,14 +1049,21 @@ int main(int argc, char **argv)
         fprintf(stderr, " skipping digit %d with zero width\n", d);
       continue;
     }
-    /* if width of digit is less than 1/one_ratio of its height it is a 1
-     * (the default 1/3 is arbitarily chosen -- normally seven segment
-     * displays use digits that are 2 times as high as wide) */
-    if((digits[d].y2-digits[d].y1+0.5)/(digits[d].x2-digits[d].x1) > one_ratio) {
+    /* if width of digit is less than 1/colon_ratio of its height it is a : */
+    /* if width of digit is less than 1/one_ratio of its height it is a 1 */
+    float ratio = (digits[d].y2-digits[d].y1+0.5)/(digits[d].x2-digits[d].x1);
+    if(ratio > colon_ratio) {
       if(flags & DEBUG_OUTPUT) {
-        fprintf(stderr, " digit %d is a 1 (height/width = %d/%d = (int) %d)\n",
+        fprintf(stderr, " char %d is a colon (height/width = %d/%d = %f)\n",
                d, digits[d].y2 - digits[d].y1, digits[d].x2 - digits[d].x1,
-               (digits[d].y2 - digits[d].y1) / (digits[d].x2 - digits[d].x1));
+               ratio);
+      }
+      digits[d].digit = D_COLON;
+    } else if(ratio > one_ratio) {
+      if(flags & DEBUG_OUTPUT) {
+        fprintf(stderr, " digit %d is a 1 (height/width = %d/%d = %f)\n",
+               d, digits[d].y2 - digits[d].y1, digits[d].x2 - digits[d].x1,
+               ratio);
       }
       digits[d].digit = D_ONE;
     }
@@ -1237,7 +1256,8 @@ int main(int argc, char **argv)
       fputc(' ', stderr);
       digits[i].digit & VERT_LEFT_UP ? fputc('|', stderr) : fputc(' ', stderr);
       digits[i].digit & HORIZ_MID ? fputc('_', stderr) :
-        digits[i].digit == D_MINUS ? fputc('_', stderr) : fputc(' ', stderr);
+        digits[i].digit == D_MINUS ? fputc('_', stderr) :
+          digits[i].digit == D_COLON ? fputc('.', stderr) : fputc(' ', stderr);
       digits[i].digit & VERT_RIGHT_UP ? fputc('|', stderr) : fputc(' ', stderr);
     }
     fputc('\n', stderr);
@@ -1246,7 +1266,8 @@ int main(int argc, char **argv)
       fputc(' ', stderr);
       digits[i].digit&VERT_LEFT_DOWN ? fputc('|', stderr) : fputc(' ', stderr);
       digits[i].digit&HORIZ_DOWN ? fputc('_', stderr) : 
-        digits[i].digit == D_DECIMAL ? fputc('.', stderr) : fputc(' ', stderr);
+        (digits[i].digit == D_DECIMAL || digits[i].digit == D_COLON) ?
+            fputc('.', stderr) : fputc(' ', stderr);
       digits[i].digit&VERT_RIGHT_DOWN ? fputc('|', stderr) : fputc(' ', stderr);
     }
     fputs("\n\n", stderr);
@@ -1268,6 +1289,7 @@ int main(int argc, char **argv)
       case D_NINE: /* fallthrough */
       case D_ALTNINE: putchar('9'); break;
       case D_DECIMAL: putchar('.'); break;
+      case D_COLON: putchar(':'); break;
       case D_MINUS: putchar('-'); break;
       case D_HEX_A: putchar('a'); break;
       case D_HEX_b: putchar('b'); break;

@@ -52,6 +52,7 @@
 #define ALL_SEGS 127
 #define DECIMAL 128
 #define MINUS 256
+#define COLON 512
 
 /* digits */
 #define D_ZERO (ALL_SEGS & ~HORIZ_MID)
@@ -68,6 +69,7 @@
 #define D_ALTNINE (ALL_SEGS & ~(VERT_LEFT_DOWN | HORIZ_DOWN))
 #define D_DECIMAL DECIMAL
 #define D_MINUS MINUS
+#define D_COLON COLON
 #define D_HEX_A (ALL_SEGS & ~HORIZ_DOWN)
 #define D_HEX_b (ALL_SEGS & ~(HORIZ_UP | VERT_RIGHT_UP))
 #define D_HEX_C (ALL_SEGS & ~(VERT_RIGHT_UP | HORIZ_MID | VERT_RIGHT_DOWN))
@@ -85,8 +87,11 @@
 #define DEC_H_RATIO 7
 #define DEC_W_RATIO 2 /* needs to work with just ones in the display, too */
 
-/* a one is recognized by a height/width ratio > ONE_RATIO (as ints) */
+/* a one is recognized by a height/width ratio > ONE_RATIO (as floats) */
 #define ONE_RATIO 3
+
+/* a colon is recognized by a height/width ratio > COLON_RATIO (as floats) */
+#define COLON_RATIO 6.5
 
 /* a minus sign is recognized by a width/height ratio > MINUS_RATIO (as ints) */
 #define MINUS_RATIO 2
