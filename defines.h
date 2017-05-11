@@ -91,8 +91,8 @@
 /* a one is recognized by a height/width ratio > ONE_RATIO (as floats) */
 #define ONE_RATIO 3
 
-/* a colon is recognized by a height/width ratio > COLON_RATIO (as floats) */
-#define COLON_RATIO 6.5
+/* a colon is by a low pixel density */
+#define COLON_DENSITY 0.4
 
 /* a minus sign is recognized by a width/height ratio > MINUS_RATIO (as ints) */
 #define MINUS_RATIO 2

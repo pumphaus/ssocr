@@ -124,7 +124,7 @@ int main(int argc, char **argv)
   int number_of_digits = NUMBER_OF_DIGITS; /* look for this many digits */
   int ignore_pixels = IGNORE_PIXELS; /* pixels to ignore when checking column */
   float one_ratio = ONE_RATIO; /* height/width > one_ratio => digit 'one' */
-  float colon_ratio = COLON_RATIO; /* height/width > colon_ratio => char 'colon' */
+  float colon_density = COLON_DENSITY; /* height/width > colon_ratio => char 'colon' */
   int minus_ratio = MINUS_RATIO; /* height/width > minus_ratio => char 'minus' */
   double thresh=THRESHOLD;  /* border between light and dark */
   int offset;  /* offset for shear */
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
       {"ignore-pixels", 1, 0, 'i'}, /* pixels ignored when searching digits */
       {"number-digits", 1, 0, 'd'}, /* number of digits in image */
       {"one-ratio", 1, 0, 'r'}, /* height/width threshold to recognize a one */
-      {"colon-ratio", 1, 0, 'c'}, /* height/width threshold to recognize a colon */
+      {"colon-ratio", 1, 0, 'c'}, /* pixel density needed for a colon */
       {"minus-ratio", 1, 0, 'm'}, /* width/height threshold to recognize a minus sign */
       {"output-image", 1, 0, 'o'}, /* write processed image to given file */
       {"output-format", 1, 0, 'O'}, /* format of output image */
@@ -259,10 +259,10 @@ int main(int argc, char **argv)
         break;
       case 'c':
         if(optarg) {
-          colon_ratio = atof(optarg);
-          if(colon_ratio < 2) {
+          colon_density = atof(optarg);
+          if(colon_density < 2) {
             fprintf(stderr, "warning: ignoring --colon-ratio=%s\n", optarg);
-            colon_ratio = COLON_RATIO;
+            colon_density = COLON_DENSITY;
           }
         }
         break;
@@ -379,7 +379,7 @@ int main(int argc, char **argv)
     fprintf(stderr, "luminance  = ");
     print_lum_key(lt, stderr); fprintf(stderr, "\n");
     fprintf(stderr, "height/width threshold for one   = %f\n", one_ratio);
-    fprintf(stderr, "height/width threshold for colon = %f\n", colon_ratio);
+    fprintf(stderr, "density threshold for colon      = %f\n", colon_density);
     fprintf(stderr, "width/height threshold for minus = %d\n", minus_ratio);
     fprintf(stderr, "optind=%d argc=%d\n", optind, argc);
     fprintf(stderr, "================================================================================\n");
@@ -1049,23 +1049,36 @@ int main(int argc, char **argv)
         fprintf(stderr, " skipping digit %d with zero width\n", d);
       continue;
     }
-    /* if width of digit is less than 1/colon_ratio of its height it is a : */
-    /* if width of digit is less than 1/one_ratio of its height it is a 1 */
+    /* if width of digit is less than 1/one_ratio of its height it is a 1 or
+     * a colon */
     float ratio = (digits[d].y2-digits[d].y1+0.5)/(digits[d].x2-digits[d].x1);
-    if(ratio > colon_ratio) {
+    if(ratio > one_ratio) {
       if(flags & DEBUG_OUTPUT) {
-        fprintf(stderr, " char %d is a colon (height/width = %d/%d = %f)\n",
+        fprintf(stderr, " digit %d is a 1 or a colon"
+                        " (height/width = %d/%d = %f)\n",
                d, digits[d].y2 - digits[d].y1, digits[d].x2 - digits[d].x1,
                ratio);
       }
-      digits[d].digit = D_COLON;
-    } else if(ratio > one_ratio) {
-      if(flags & DEBUG_OUTPUT) {
-        fprintf(stderr, " digit %d is a 1 (height/width = %d/%d = %f)\n",
-               d, digits[d].y2 - digits[d].y1, digits[d].x2 - digits[d].x1,
-               ratio);
+
+      found_pixels = 0;
+
+      for(i=digits[d].x1; i<=digits[d].x2; i++) {
+        for(j=digits[d].y1; j<=digits[d].y2; j++) {
+          imlib_image_query_pixel(i, j, &color);
+          lum = get_lum(&color, lt);
+          if(is_pixel_set(lum, thresh)) /* dark i.e. pixel is set */ {
+            found_pixels++;
+          }
+        }
       }
-      digits[d].digit = D_ONE;
+
+      float density = found_pixels / (float) ((digits[d].y2 - digits[d].y1) * (digits[d].x2 - digits[d].x1));
+      digits[d].digit = density < COLON_DENSITY ? D_COLON : D_ONE;
+
+      if(flags & DEBUG_OUTPUT) {
+        fprintf(stderr, "  with pixel density %f, deciding for %s\n", density,
+                digits[d].digit == D_COLON ? "colon" : "1");
+      }
     }
   }
 
