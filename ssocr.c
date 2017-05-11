@@ -147,6 +147,9 @@ int main(int argc, char **argv)
   digit_struct *digits=NULL; /* position of digits in image */
   int found_pixels=0; /* how many pixels are already found */
 
+  float ratio = 0;
+  float density = 0;
+
   /* if we provided no arguments to the program exit */
   if (argc < 2) {
     usage(argv[0], stderr);
@@ -1051,7 +1054,7 @@ int main(int argc, char **argv)
     }
     /* if width of digit is less than 1/one_ratio of its height it is a 1 or
      * a colon */
-    float ratio = (digits[d].y2-digits[d].y1+0.5)/(digits[d].x2-digits[d].x1);
+    ratio = (digits[d].y2-digits[d].y1+0.5)/(digits[d].x2-digits[d].x1);
     if(ratio > one_ratio) {
       if(flags & DEBUG_OUTPUT) {
         fprintf(stderr, " digit %d is a 1 or a colon"
@@ -1072,7 +1075,7 @@ int main(int argc, char **argv)
         }
       }
 
-      float density = found_pixels / (float) ((digits[d].y2 - digits[d].y1) * (digits[d].x2 - digits[d].x1));
+      density = found_pixels / (float) ((digits[d].y2 - digits[d].y1) * (digits[d].x2 - digits[d].x1));
       digits[d].digit = density < COLON_DENSITY ? D_COLON : D_ONE;
 
       if(flags & DEBUG_OUTPUT) {
