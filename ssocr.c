@@ -263,10 +263,6 @@ int main(int argc, char **argv)
       case 'c':
         if(optarg) {
           colon_density = atof(optarg);
-          if(colon_density < 2) {
-            fprintf(stderr, "warning: ignoring --colon-ratio=%s\n", optarg);
-            colon_density = COLON_DENSITY;
-          }
         }
         break;
       case 'm':
@@ -1076,7 +1072,7 @@ int main(int argc, char **argv)
       }
 
       density = found_pixels / (float) ((digits[d].y2 - digits[d].y1) * (digits[d].x2 - digits[d].x1));
-      digits[d].digit = density < COLON_DENSITY ? D_COLON : D_ONE;
+      digits[d].digit = density < colon_density ? D_COLON : D_ONE;
 
       if(flags & DEBUG_OUTPUT) {
         fprintf(stderr, "  with pixel density %f, deciding for %s\n", density,
