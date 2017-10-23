@@ -1311,6 +1311,7 @@ int main(int argc, char **argv)
       case D_HEX_E: putchar('e'); break;
       case D_HEX_F: putchar('f'); break;
       case D_ALPHA_P: putchar('P'); break;
+      case D_ALPHA_L: putchar('L'); break;
       /* finding a digit with no set segments is not supposed to happen */
       case D_UNKNOWN: putchar(' '); unknown_digit++; break;
       default: putchar('_'); unknown_digit++; break;
