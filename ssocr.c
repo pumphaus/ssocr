@@ -35,6 +35,8 @@
 /* file permissions */
 #include <sys/stat.h>       /* umask */
 
+#include <math.h>
+
 /* my headers */
 #include "defines.h"        /* defines */
 #include "ssocr.h"          /* types */
@@ -1050,7 +1052,7 @@ int main(int argc, char **argv)
     }
     /* if width of digit is less than 1/one_ratio of its height it is a 1 or
      * a colon */
-    ratio = (digits[d].y2-digits[d].y1+0.5)/(digits[d].x2-digits[d].x1);
+    ratio = (digits[d].y2-digits[d].y1)/(float)(digits[d].x2-digits[d].x1);
     if(ratio > one_ratio) {
       if(flags & DEBUG_OUTPUT) {
         fprintf(stderr, " digit %d is a 1 or a colon"
@@ -1116,13 +1118,14 @@ int main(int argc, char **argv)
     /* if height of digit is less than 1/minus_ratio of its height it is a 1
      * (the default 1/3 is arbitarily chosen -- normally seven segment
      * displays use digits that are 2 times as high as wide) */
-    if((digits[d].digit == D_UNKNOWN) &&
-       ((digits[d].x2-digits[d].x1)/(digits[d].y2-digits[d].y1)>=minus_ratio)) {
+
+    ratio = (digits[d].x2-digits[d].x1)/(float)(digits[d].y2-digits[d].y1);
+    if((digits[d].digit == D_UNKNOWN) && (round(ratio) >= minus_ratio)) {
       if(flags & DEBUG_OUTPUT) {
         fprintf(stderr,
                " digit %d is a minus (width/height = %d/%d = (int) %d)\n",
                d, digits[d].x2 - digits[d].x1, digits[d].y2 - digits[d].y1,
-               (digits[d].x2 - digits[d].x1) / (digits[d].y2 - digits[d].y1));
+               (int) ratio);
       }
       digits[d].digit = D_MINUS;
     }
